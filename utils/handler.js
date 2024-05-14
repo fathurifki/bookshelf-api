@@ -46,7 +46,6 @@ async function handleModulePost(request, h, mongoose) {
 async function handleModuleGet(req, h) {
   try {
     const books = await Book.find();
-    console.log("🚀 ~ handleModuleGet ~ books:", books);
     return h
       .response({
         status: "success",

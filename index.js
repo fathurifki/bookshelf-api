@@ -1,5 +1,8 @@
 const Hapi = require("@hapi/hapi");
 const mongoose = require("mongoose");
+require('dotenv').config();
+
+
 const {
   handleModuleGet,
   handleModulePost,
@@ -10,13 +13,10 @@ const {
 
 const init = async () => {
   await mongoose
-    .connect(
-      "mongodb+srv://jojo:jojo123@cluster001.vqkklgh.mongodb.net/books?retryWrites=true&w=majority&appName=Cluster001",
-      {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-      }
-    )
+    .connect(process.env.MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    })
     .then(() => {
       console.log("Connected to MongoDB");
     })
