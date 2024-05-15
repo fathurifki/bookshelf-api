@@ -17,7 +17,7 @@ async function handleModulePost(request, h) {
       .response({
         status: "fail",
         message: !request.payload.name
-          ? "Gagal menambahkan buku. Mohon isi nama buku'"
+          ? "Gagal menambahkan buku. Mohon isi nama buku"
           : "Gagal menambahkan buku. readPage tidak boleh lebih besar dari pageCount",
       })
       .code(400);
@@ -97,7 +97,7 @@ async function handleModulePut(request, h) {
         status: "fail",
         message: "Gagal memperbarui buku. Id tidak ditemukan",
       })
-      .code(400);
+      .code(404);
   }
 
   if (
@@ -109,8 +109,8 @@ async function handleModulePut(request, h) {
       .response({
         status: "fail",
         message: !request.payload.name
-          ? "Nama buku diperlukan."
-          : "Jumlah halaman yang dibaca tidak boleh lebih dari jumlah halaman total.",
+          ? "Gagal memperbarui buku. Mohon isi nama buku"
+          : "Gagal memperbarui buku. readPage tidak boleh lebih besar dari pageCount",
       })
       .code(400);
   }
