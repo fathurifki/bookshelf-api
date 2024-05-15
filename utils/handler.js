@@ -1,5 +1,3 @@
-const Book = require("../schema/Book");
-
 let nanoid;
 
 (async () => {
@@ -7,18 +5,35 @@ let nanoid;
   nanoid = nanoidModule.nanoid;
 })();
 
-async function handleModulePost(request, h, mongoose) {
+let books = [];
+
+async function handleModulePost(request, h) {
+  if (
+    !request.payload.name ||
+    (request.payload.readPage &&
+      request.payload.readPage > request.payload.pageCount)
+  ) {
+    return h
+      .response({
+        status: "fail",
+        message: !request.payload.name
+          ? "Gagal menambahkan buku. Mohon isi nama buku'"
+          : "Gagal menambahkan buku. readPage tidak boleh lebih besar dari pageCount",
+      })
+      .code(400);
+  }
+
   const id = nanoid(16);
   try {
-    const newBook = new Book({
-      ...request?.payload,
+    const newBook = {
+      ...request.payload,
       finished: false,
-      insertAt: new Date().toISOString(),
+      insertedAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       id,
-    });
+    };
 
-    await newBook.save();
+    books.push(newBook);
     return h
       .response({
         status: "success",
@@ -29,27 +44,23 @@ async function handleModulePost(request, h, mongoose) {
       })
       .code(201);
   } catch (error) {
-    if (error.name === "ValidationError") {
-      return h
-        .response({
-          status: "fail",
-          message: Object.values(error.errors)
-            .map((err) => err.message)
-            .join(", "),
-        })
-        .code(400);
-    }
-    return h.response("Failed to add book").code(500);
+    console.error(error);
+    return h.response("Gagal menambahkan buku").code(500);
   }
 }
 
 async function handleModuleGet(req, h) {
   try {
-    const books = await Book.find();
     return h
       .response({
         status: "success",
-        data: books || [],
+        data: {
+          books: books.map((book) => ({
+            id: book.id,
+            name: book.name,
+            publisher: book.publisher,
+          })),
+        },
       })
       .code(200);
   } catch (error) {
@@ -58,18 +69,8 @@ async function handleModuleGet(req, h) {
 }
 
 async function handleModuleGetById(req, res) {
-  const { booksId } = req.params;
-  try {
-    const book = await Book.find({ id: booksId });
-    return res
-      .response({
-        status: "success",
-        data: {
-          book: book[0],
-        },
-      })
-      .code(200);
-  } catch (error) {
+  const book = books.find((book) => book.id === req.params.booksId);
+  if (!book) {
     return res
       .response({
         status: "fail",
@@ -77,59 +78,75 @@ async function handleModuleGetById(req, res) {
       })
       .code(404);
   }
+
+  return res
+    .response({
+      status: "success",
+      data: {
+        book: book
+      },
+    })
+    .code(200);
 }
 
 async function handleModulePut(request, h) {
-  const { booksId } = request.params;
-  try {
-    const result = await Book.updateOne({ id: booksId }, request.payload);
-
-    if (result.modifiedCount === 0) {
-      return h
-        .response({
-          status: "fail",
-          message: "Buku tidak ditemukan",
-        })
-        .code(404);
-    }
-
+  const index = books.findIndex((book) => book.id === request.params.booksId);
+  if (index === -1) {
     return h
       .response({
-        status: "success",
-        message: "Book successfully updated",
+        status: "fail",
+        message: "Gagal memperbarui buku. Id tidak ditemukan",
       })
-      .code(200);
-  } catch (error) {
-    if (error.name === "ValidationError") {
-      return h
-        .response({
-          status: "fail",
-          message: Object.values(error.errors)
-            .map((err) => err.message)
-            .join(", "),
-        })
-        .code(400);
-    }
+      .code(400);
   }
+
+  if (
+    !request.payload.name ||
+    (request.payload.readPage &&
+      request.payload.readPage > request.payload.pageCount)
+  ) {
+    return h
+      .response({
+        status: "fail",
+        message: !request.payload.name
+          ? "Nama buku diperlukan."
+          : "Jumlah halaman yang dibaca tidak boleh lebih dari jumlah halaman total.",
+      })
+      .code(400);
+  }
+
+  books[index] = {
+    ...books[index],
+    ...request.payload,
+    updatedAt: new Date().toISOString(),
+  };
+
+  return h
+    .response({
+      status: "success",
+      message: "Buku berhasil diperbarui",
+    })
+    .code(200);
 }
 
 async function handleModuleDelete(req, res) {
-  try {
-    const book = await Book.deleteOne({ id: req.params.booksId });
-    return res
-      .response({
-        status: "success",
-        message: "Buku berhasil dihapus",
-      })
-      .code(200);
-  } catch (error) {
+  const index = books.findIndex((book) => book.id === req.params.booksId);
+  if (index === -1) {
     return res
       .response({
         status: "fail",
         message: "Buku gagal dihapus. Id tidak ditemukan",
       })
-      .code(500);
+      .code(404);
   }
+
+  books.splice(index, 1);
+  return res
+    .response({
+      status: "success",
+      message: "Buku berhasil dihapus",
+    })
+    .code(200);
 }
 
 module.exports = {

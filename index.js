@@ -1,7 +1,4 @@
 const Hapi = require("@hapi/hapi");
-const mongoose = require("mongoose");
-require('dotenv').config();
-
 
 const {
   handleModuleGet,
@@ -12,21 +9,9 @@ const {
 } = require("./utils/handler");
 
 const init = async () => {
-  await mongoose
-    .connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    })
-    .then(() => {
-      console.log("Connected to MongoDB");
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-
   const server = Hapi.server({
     port: 9000,
-    host: "0.0.0.0",
+    host: "localhost",
   });
 
   server.route({
